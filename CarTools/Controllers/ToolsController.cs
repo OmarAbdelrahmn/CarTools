@@ -1,10 +1,12 @@
 ﻿using CarTools.services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CarTools.Controllers;
 [Route("api/[controller]")]
 [ApiController]
+[EnableRateLimiting("ConcurrencyLimiter")]
 public class ToolsController(IToolService tool) : ControllerBase
 {
     private readonly IToolService tool = tool;

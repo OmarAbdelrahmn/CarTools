@@ -2,6 +2,7 @@ using CarTools;
 using CarTools.services;
 using CarTools.services.implement;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -15,6 +16,19 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStore
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+
+builder.Services.AddRateLimiter(options => {
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddConcurrencyLimiter("ConcurrencyLimiter", options =>
+
+    {
+         options.PermitLimit = 100;
+         options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+         options.QueueLimit = 50;
+    });   
+
+});
 //builder.Services.AddAuthentication().AddGoogle(options=>
 //{
 //   // IConfigurationSection section = builder.Configuration.GetSection("Authentication:google");
