@@ -21,6 +21,7 @@ public class ToolService(ApplicationDbcontext context) : IToolService
 
         await context.tools
         .ProjectToType<ToolResponse>()
+        .AsNoTracking()
         .ToListAsync();
 
     public async Task<ToolResponse?> GetByIdasync(int id)
@@ -28,6 +29,7 @@ public class ToolService(ApplicationDbcontext context) : IToolService
         var tool = await context.tools
         .Where(x => x.Id == id)
         .ProjectToType<ToolResponse>()
+        .AsNoTracking()
         .FirstOrDefaultAsync();
 
         return tool == null ? null : tool;
@@ -38,6 +40,7 @@ public class ToolService(ApplicationDbcontext context) : IToolService
         await context.tools
         .Where(x => x.Name.ToLower().Contains(name.ToLower()))
         .ProjectToType<ToolResponse>()
+        .AsNoTracking()
         .ToListAsync();
 
 }
