@@ -6,5 +6,5 @@ namespace CarTools;
 
 public class ApplicationDbcontext(DbContextOptions<ApplicationDbcontext> options) : IdentityDbContext(options)
 {
-    public DbSet<Tool> tools { get; set; }
+    public DbSet<Tool> tools { get; set; } = default!;
 }

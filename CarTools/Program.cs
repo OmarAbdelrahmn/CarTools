@@ -1,77 +1,69 @@
-using CarTools;
-using CarTools.services;
+
+using CarTools.constructs;
 using CarTools.services.implement;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
+using CarTools.services;
+using Mapster;
+using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using CarTools;
+using CarTools.Entities;
+using System;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-
-builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStores<ApplicationDbcontext>();
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-
-builder.Services.AddRateLimiter(options => {
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddConcurrencyLimiter("ConcurrencyLimiter", options =>
-
-    {
-         options.PermitLimit = 100;
-         options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-         options.QueueLimit = 50;
-    });   
-
-});
-//builder.Services.AddAuthentication().AddGoogle(options=>
-//{
-//   // IConfigurationSection section = builder.Configuration.GetSection("Authentication:google");
-
-//    options.ClientId = builder.Configuration["Authentication:google:ClientId"]!;
-//    options.ClientId = builder.Configuration["Authentication:google:ClientSecret"]!;
-//  //  options.ClientSecret = section["ClientSecret"]!;
-//});
 builder.Services.AddScoped<IToolService, ToolService>();
 
-var connectionString = builder.Configuration.GetConnectionString("dbstring") ??
-            throw new InvalidOperationException("Connection string 'dbstring' not found.");
+var mappingConfig = TypeAdapterConfig.GlobalSettings;
+mappingConfig.Scan(Assembly.GetExecutingAssembly());
+
+builder.Services.AddSingleton<IMapper>(new Mapper(mappingConfig));
+
+var ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
+            throw new InvalidOperationException("Connection string is not found in the configuration file");
 
 builder.Services.AddDbContext<ApplicationDbcontext>(options =>
-    options.UseSqlServer(connectionString));
-//builder.Services.AddMapsterConfig();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+    options.UseSqlServer(ConnectionString));
+
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwaggerUI(options => // UseSwaggerUI is called only in Development.
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-        options.RoutePrefix = string.Empty;
-    });
-
-    app.UseSwagger();
-    app.UseSwaggerUI();
     app.MapOpenApi();
 }
 
-app.MapIdentityApi<IdentityUser>();
-
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.MapGet("/tools", async (IToolService toolService) =>
+{
+    var tools = await toolService.GetAllasync();
+    return Results.Ok(tools);
+});
 
-app.UseRateLimiter();
 
-app.MapControllers();
+
+app.MapGet("/tools/{id:int}", async (int id, IToolService toolService) =>
+{
+    var tool = await toolService.GetByIdasync(id);
+    return Results.Ok(tool);
+});
+
+
+
+app.MapGet("/tools/{Name:alpha}", async (string name, IToolService toolService) =>
+{
+    var tools = await toolService.GetByNameAsynce(name);
+    return Results.Ok(tools);
+});
+
+
+app.MapPost("/tools", async (ToolRequest request, IToolService toolService) =>
+{
+    var tool = await toolService.AddPollsasync(request);
+    return Results.Created($"/tools/{tool.Id}", tool);
+});
 
 app.Run();

@@ -9,32 +9,35 @@ public class ToolService(ApplicationDbcontext context) : IToolService
 {
     private readonly ApplicationDbcontext context = context;
 
-    public Task<ToolResponse> AddPollsasync(ToolRequest request, CancellationToken cancellationToken = default)
+    public async Task<ToolResponse> AddPollsasync(ToolRequest request)
     {
-        throw new NotImplementedException();
-    }
-
-    public async Task<IEnumerable<ToolResponse>> GetAllasync(CancellationToken cancellationToken = default)
-    {
-       var Alltools = await context.tools.ToListAsync();
-
-        return Alltools.Adapt<IEnumerable<ToolResponse>>();
-    }
-
-    public async Task<ToolResponse> GetByIdasync(int id, CancellationToken cancellationToken = default)
-    {
-        var tool = await context.tools.FindAsync(id);
-
+        var tool = request.Adapt<Tool>();
+        await context.tools.AddAsync(tool);
+        await context.SaveChangesAsync();
         return tool.Adapt<ToolResponse>();
     }
-    public async Task<IEnumerable<Tool>> GetByNameAsynce(string Name, CancellationToken cancellationToken = default)
-    {
-        var Diseases = await context.tools
-                   .Where(x => x.Name.StartsWith(Name))
-                   .AsNoTracking()
-                   .ToListAsync(cancellationToken);
 
-        
-        return Diseases;
+    public async Task<IEnumerable<ToolResponse>> GetAllasync() =>
+
+        await context.tools
+        .ProjectToType<ToolResponse>()
+        .ToListAsync();
+
+    public async Task<ToolResponse?> GetByIdasync(int id)
+    {
+        var tool = await context.tools
+        .Where(x => x.Id == id)
+        .ProjectToType<ToolResponse>()
+        .FirstOrDefaultAsync();
+
+        return tool == null ? null : tool;
     }
+
+    public async Task<IEnumerable<ToolResponse>> GetByNameAsynce(string name) =>
+
+        await context.tools
+        .Where(x => x.Name.ToLower().Contains(name.ToLower()))
+        .ProjectToType<ToolResponse>()
+        .ToListAsync();
+
 }
